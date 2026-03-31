@@ -1,0 +1,49 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+      - postgres
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql://seo:seo@postgres:5432/seo
+    volumes:
+      - ./app:/app/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  worker:
+    build: .
+    command: celery -A app.workers.celery_app worker --loglevel=info --concurrency=2
+    depends_on:
+      - redis
+      - postgres
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql://seo:seo@postgres:5432/seo
+    volumes:
+      - ./app:/app/app
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: seo
+      POSTGRES_PASSWORD: seo
+      POSTGRES_DB: seo
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
