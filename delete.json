@@ -1,0 +1,28 @@
+{
+  "top_actions": [
+    "No critical technical errors detected \u2014 maintain current technical health by monitoring Core Web Vitals and ensuring SSL/security headers remain in place.",
+    "Conduct a content audit to identify your highest-traffic pages and verify title tags (50-60 chars) and meta descriptions (150-160 chars) are optimized for CTR; use GSC data to find pages with high impressions but low CTR.",
+    "Implement schema markup (LocalBusiness, Organization, or Product depending on your service) on key pages to enable rich snippets and increase SERP visibility.",
+    "Review E-E-A-T signals on service/product pages \u2014 ensure author credentials, case studies, client testimonials, and trust badges are prominently displayed to reinforce expertise and authority.",
+    "Map out internal linking strategy for your main service pages to distribute authority from high-performing pages and improve crawlability of deeper content using contextual anchor text."
+  ],
+  "agents": [
+    {
+      "agent": "technical",
+      "summary": "Found 0 errors and 0 warnings across 1 pages.",
+      "issue_counts": { "error": 0, "warning": 0, "info": 0 }
+    },
+    {
+      "agent": "content",
+      "summary": "Generated content suggestions for 0 pages.",
+      "issue_counts": { "error": 0, "warning": 0, "info": 0 }
+    },
+    {
+      "agent": "linking",
+      "summary": "Found 0 internal linking opportunities.",
+      "issue_counts": { "error": 0, "warning": 0, "info": 0 }
+    }
+  ],
+  "pages_crawled": 1,
+  "pages_discovered": 1
+}

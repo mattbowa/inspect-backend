@@ -8,6 +8,7 @@ authors = []
 python = ">=3.11,<3.13"
 fastapi = "^0.111.0"
 uvicorn = {extras = ["standard"], version = "^0.29.0"}
+watchfiles = "^0.21"
 celery = {extras = ["redis"], version = "^5.3.6"}
 qdrant-client = "^1.9.0"
 anthropic = "^0.40.0"
@@ -22,6 +23,8 @@ sqlalchemy = "^2.0"
 psycopg2-binary = "^2.9"
 tenacity = "^8.3.0"
 structlog = "^24.1.0"
+stripe = "^10.0.0"
+resend = "^2.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.2.0"

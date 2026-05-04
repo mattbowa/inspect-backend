@@ -22,3 +22,5 @@ class FullReport(BaseModel):
     seo_score: int
     agents: list[AgentReport]
     top_actions: list[str]
+    pages_crawled: int = 0
+    pages_discovered: int = 0

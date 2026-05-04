@@ -13,7 +13,7 @@ log = structlog.get_logger()
 _client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
 
 
-def run(scan_id: str, url: str, agent_reports: list[AgentReport]) -> FullReport:
+def run(scan_id: str, url: str, agent_reports: list[AgentReport], pages_crawled: int = 0, pages_discovered: int = 0) -> FullReport:
     all_issues = [issue for r in agent_reports for issue in r.issues]
 
     error_count = sum(1 for i in all_issues if i.severity == "error")
@@ -28,6 +28,8 @@ def run(scan_id: str, url: str, agent_reports: list[AgentReport]) -> FullReport:
         seo_score=score,
         agents=agent_reports,
         top_actions=top_actions,
+        pages_crawled=pages_crawled,
+        pages_discovered=pages_discovered,
     )
 
 

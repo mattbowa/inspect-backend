@@ -136,6 +136,58 @@ curl "http://localhost:8000/history?domain=petstock" | python3 -m json.tool
 | `warning` | Should be fixed          | -3 pts       |
 | `info`    | Opportunity / suggestion | 0 pts        |
 
+## Stripe webhooks (local)
+
+**1. Install the Stripe CLI:**
+
+```bash
+brew install stripe/stripe-cli/stripe
+```
+
+**2. Login:**
+
+```bash
+stripe login
+```
+
+**3. Forward events to the local server:**
+
+```bash
+stripe listen --forward-to localhost:8000/billing/webhook
+```
+
+The CLI prints a `whsec_...` signing secret — copy it into `.env`:
+
+```
+STRIPE_WEBHOOK_SECRET=whsec_...
+```
+
+Restart the backend to pick it up. Stripe events will now be forwarded in real time.
+
+## Scheduled scans
+
+Celery Beat triggers `run_scheduled_scans` daily at 6am UTC (4pm Sydney AEST / 6pm AEDT).
+
+To trigger it manually without waiting for the schedule:
+
+```bash
+docker compose exec api python -c "from app.workers.tasks import run_scheduled_scans; run_scheduled_scans.delay()"
+```
+
+Watch the output:
+
+```bash
+docker compose logs -f beat worker
+```
+
+## Database access
+
+Connect directly from your host (while Docker is running):
+
+```bash
+PGPASSWORD=seo psql -h localhost -U seo -d seo
+```
+
 ## Production database
 
 By default Postgres runs as a Docker container with data persisted in a named volume (`postgres_data`). To use a managed database in production (e.g. [Neon](https://neon.tech) free tier), just update `DATABASE_URL` in your `.env`:

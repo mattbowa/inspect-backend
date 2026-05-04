@@ -1,4 +1,5 @@
 from celery import Celery
+from celery.schedules import crontab
 from app.config import settings
 
 celery_app = Celery(
@@ -14,4 +15,11 @@ celery_app.conf.update(
     accept_content=["json"],
     task_track_started=True,
     result_expires=3600,
+    beat_schedule={
+        "daily-automated-scans": {
+            "task": "tasks.run_scheduled_scans",
+            "schedule": crontab(hour=6, minute=0),  # 6am UTC = 4pm Sydney (AEST) / 6pm Sydney (AEDT)
+            # "schedule": crontab(minute="*/2"),  # TEST: runs every 2 minutes
+        },
+    },
 )

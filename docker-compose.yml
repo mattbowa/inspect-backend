@@ -1,33 +1,38 @@
+x-common: &common
+  depends_on:
+    - redis
+    - postgres
+  env_file:
+    - .env
+  environment:
+    - REDIS_URL=redis://redis:6379
+    - DATABASE_URL=postgresql://seo:seo@postgres:5432/seo
+  volumes:
+    - ./app:/app/app
+
 services:
   api:
+    <<: *common
     build: .
+    image: inspect-backend
     ports:
       - "8000:8000"
-    depends_on:
-      - redis
-      - postgres
-    env_file:
-      - .env
-    environment:
-      - REDIS_URL=redis://redis:6379
-      - DATABASE_URL=postgresql://seo:seo@postgres:5432/seo
-    volumes:
-      - ./app:/app/app
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
   worker:
-    build: .
+    <<: *common
+    build:
+      context: .
+      args:
+        INSTALL_PLAYWRIGHT: "true"
+    image: inspect-backend-worker
+
     command: celery -A app.workers.celery_app worker --loglevel=info --concurrency=2
-    depends_on:
-      - redis
-      - postgres
-    env_file:
-      - .env
-    environment:
-      - REDIS_URL=redis://redis:6379
-      - DATABASE_URL=postgresql://seo:seo@postgres:5432/seo
-    volumes:
-      - ./app:/app/app
+
+  beat:
+    <<: *common
+    image: inspect-backend
+    command: celery -A app.workers.celery_app beat --loglevel=info
 
   redis:
     image: redis:7-alpine
