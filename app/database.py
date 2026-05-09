@@ -7,7 +7,8 @@ import uuid
 
 from app.config import settings
 
-engine = create_engine(settings.database_url)
+_db_url = settings.database_url.replace("postgres://", "postgresql://", 1)
+engine = create_engine(_db_url)
 Session = sessionmaker(bind=engine)
 
 
