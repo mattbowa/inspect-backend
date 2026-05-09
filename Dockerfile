@@ -21,7 +21,6 @@ WORKDIR /app
 COPY --from=builder /app/.venv /app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
 
-ARG INSTALL_PLAYWRIGHT=false
-RUN if [ "$INSTALL_PLAYWRIGHT" = "true" ]; then playwright install chromium --with-deps; fi
+RUN playwright install chromium --with-deps
 
 COPY . .
