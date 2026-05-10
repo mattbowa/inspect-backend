@@ -128,6 +128,13 @@ async def stripe_webhook(request: Request):
         email = customer.get("email", "")
         plan = sub["metadata"].get("plan") or sub["items"]["data"][0]["price"]["metadata"].get("plan", "business")
         website = sub["metadata"].get("website") or ""
+        details = sub.get("cancellation_details") or {}
+        cancellation_reason = None
+        if details.get("reason") or details.get("comment"):
+            cancellation_reason = {
+                "reason": details.get("reason"),
+                "comment": details.get("comment"),
+            }
         upsert_subscription(
             email=email,
             plan=plan,
@@ -135,6 +142,7 @@ async def stripe_webhook(request: Request):
             stripe_customer_id=sub["customer"],
             stripe_subscription_id=sub["id"],
             website=website,
+            cancellation_reason=cancellation_reason,
         )
         log.info("subscription.updated", email=email, plan=plan, status=sub["status"])
 

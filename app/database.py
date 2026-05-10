@@ -48,11 +48,12 @@ class Subscription(Base):
     stripe_customer_id = Column(String)
     stripe_subscription_id = Column(Text)
     website = Column(String)
+    cancellation_reason = Column(JSON)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
 
-def upsert_subscription(email: str, plan: str, status: str, stripe_customer_id: str, stripe_subscription_id: str, website: str = None):
+def upsert_subscription(email: str, plan: str, status: str, stripe_customer_id: str, stripe_subscription_id: str, website: str = None, cancellation_reason: dict = None):
     import uuid
     with Session() as session:
         record = session.query(Subscription).filter_by(email=email).first()
@@ -63,6 +64,8 @@ def upsert_subscription(email: str, plan: str, status: str, stripe_customer_id: 
             record.stripe_subscription_id = stripe_subscription_id
             if website:
                 record.website = website
+            if cancellation_reason is not None:
+                record.cancellation_reason = cancellation_reason
             record.updated_at = datetime.now(timezone.utc)
         else:
             record = Subscription(
@@ -73,6 +76,7 @@ def upsert_subscription(email: str, plan: str, status: str, stripe_customer_id: 
                 stripe_customer_id=stripe_customer_id,
                 stripe_subscription_id=stripe_subscription_id,
                 website=website,
+                cancellation_reason=cancellation_reason,
             )
             session.add(record)
         session.commit()
