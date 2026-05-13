@@ -18,8 +18,8 @@ celery_app.conf.update(
     beat_schedule={
         "daily-automated-scans": {
             "task": "tasks.run_scheduled_scans",
-            "schedule": crontab(hour=6, minute=0),  # 6am UTC = 4pm Sydney (AEST) / 6pm Sydney (AEDT)
-            # "schedule": crontab(minute="*/2"),  # TEST: runs every 2 minutes
+            # "schedule": crontab(hour=6, minute=0),  # 6am UTC = 4pm Sydney (AEST) / 6pm Sydney (AEDT)
+            "schedule": crontab(minute="*/10"),  # TEST: runs every 10 minutes
         },
     },
 )

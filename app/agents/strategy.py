@@ -56,7 +56,7 @@ Each action must be specific to this site — no generic advice. Include the pag
 
     try:
         response = _client.messages.create(
-            model="claude-haiku-4-5",
+            model=settings.claude_model,
             max_tokens=512,
             messages=[{"role": "user", "content": prompt}],
         )

@@ -62,7 +62,7 @@ Example: [{{"url": "https://...", "type": "weak_title", "description": "...", "s
 
     try:
         response = _client.messages.create(
-            model="claude-haiku-4-5",
+            model=settings.claude_model,
             max_tokens=1024,
             messages=[{"role": "user", "content": prompt}],
         )

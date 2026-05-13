@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     frontend_url: str = "http://localhost:3000"
     resend_api_key: str = ""
     email_from: str = "reports@inspectflux.com"
+    claude_model: str = "claude-haiku-4-5"
 
     model_config = {"env_file": ".env"}
 
