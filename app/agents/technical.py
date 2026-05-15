@@ -2,14 +2,79 @@
 Technical SEO Agent — rule-based checks across all crawled pages.
 No LLM calls: fast and deterministic.
 """
+import httpx
 from urllib.parse import urlparse
 
 from app.models.report import AgentReport, Issue
 from app.models.scan import PageData
 
 
+def _fetch_site_meta(base_url: str) -> dict:
+    parsed = urlparse(base_url)
+    root = f"{parsed.scheme}://{parsed.netloc}"
+    meta = {"has_robots_txt": False, "robots_blocks_root": False, "has_sitemap": False}
+    try:
+        with httpx.Client(follow_redirects=True, timeout=10) as client:
+            robots_text = ""
+            r = client.get(f"{root}/robots.txt")
+            if r.status_code == 200 and "user-agent" in r.text.lower():
+                meta["has_robots_txt"] = True
+                robots_text = r.text
+                ua_applies = False
+                for line in robots_text.splitlines():
+                    line = line.strip()
+                    if line.lower().startswith("user-agent:"):
+                        ua_applies = line.split(":", 1)[1].strip() == "*"
+                    elif ua_applies and line.lower().startswith("disallow:"):
+                        if line.split(":", 1)[1].strip() == "/":
+                            meta["robots_blocks_root"] = True
+
+            sitemap_url = f"{root}/sitemap.xml"
+            for line in robots_text.splitlines():
+                if line.lower().startswith("sitemap:"):
+                    sitemap_url = line.split(":", 1)[1].strip()
+                    break
+            s = client.get(sitemap_url)
+            if s.status_code == 200 and ("<urlset" in s.text or "<sitemapindex" in s.text):
+                meta["has_sitemap"] = True
+    except Exception:
+        pass
+    return meta
+
+
 def run(pages: list[PageData]) -> AgentReport:
     issues: list[Issue] = []
+
+    # ── Site-level checks (robots.txt, sitemap) ───────────────────────────────
+    if pages:
+        site_meta = _fetch_site_meta(pages[0].url)
+        site_url = pages[0].url
+
+        if not site_meta["has_robots_txt"]:
+            issues.append(Issue(
+                page_url=site_url,
+                severity="warning",
+                type="missing_robots_txt",
+                description="No robots.txt file found.",
+                suggestion="Create a robots.txt file to control crawler access and reference your sitemap.",
+            ))
+        elif site_meta["robots_blocks_root"]:
+            issues.append(Issue(
+                page_url=site_url,
+                severity="error",
+                type="robots_blocks_all",
+                description="robots.txt is blocking all crawlers from the entire site (Disallow: /).",
+                suggestion="Update robots.txt to allow search engines to crawl your site.",
+            ))
+
+        if not site_meta["has_sitemap"]:
+            issues.append(Issue(
+                page_url=site_url,
+                severity="warning",
+                type="missing_sitemap",
+                description="No XML sitemap found at /sitemap.xml or referenced in robots.txt.",
+                suggestion="Create an XML sitemap and submit it to Google Search Console.",
+            ))
 
     title_seen: dict[str, str] = {}
     meta_seen: dict[str, str] = {}
@@ -25,6 +90,17 @@ def run(pages: list[PageData]) -> AgentReport:
     start_url = pages[0].url if pages else None
 
     for page in pages:
+
+        # ── HTTPS ─────────────────────────────────────────────────────────────
+
+        if urlparse(page.url).scheme != "https":
+            issues.append(Issue(
+                page_url=page.url,
+                severity="error",
+                type="not_https",
+                description="Page is served over HTTP, not HTTPS.",
+                suggestion="Enable HTTPS — Google flags HTTP pages as 'Not secure' and uses HTTPS as a ranking signal.",
+            ))
 
         # ── Title ──────────────────────────────────────────────────────────────
 
@@ -148,7 +224,7 @@ def run(pages: list[PageData]) -> AgentReport:
         if not page.canonical_url:
             issues.append(Issue(
                 page_url=page.url,
-                severity="info",
+                severity="warning",
                 type="missing_canonical",
                 description="Page has no canonical tag.",
                 suggestion="Add <link rel=\"canonical\" href=\"...\"> to avoid duplicate content issues.",
@@ -222,8 +298,9 @@ def run(pages: list[PageData]) -> AgentReport:
 
     error_count = sum(1 for i in issues if i.severity == "error")
     warning_count = sum(1 for i in issues if i.severity == "warning")
+    info_count = sum(1 for i in issues if i.severity == "info")
     summary = (
-        f"Found {error_count} errors and {warning_count} warnings "
+        f"Found {error_count} errors, {warning_count} warnings, and {info_count} info items "
         f"across {len(pages)} pages."
     )
 
