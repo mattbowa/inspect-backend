@@ -19,7 +19,8 @@ def create_scan(body: ScanRequest):
         max_pages = min(body.max_pages, settings.free_page_limit)
 
     notify_email = str(body.email) if body.email and body.notify else None
-    manual_run_scan.delay(scan_id, str(body.url), max_pages, notify_email=notify_email)
+    email = str(body.email) if body.email else None
+    manual_run_scan.delay(scan_id, str(body.url), max_pages, notify_email=notify_email, email=email)
     return ScanResponse(scan_id=scan_id, status=ScanStatus.pending, url=str(body.url))
 
 

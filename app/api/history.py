@@ -31,7 +31,7 @@ def list_history(
     if not sub:
         raise HTTPException(status_code=403, detail="Active subscription required")
 
-    records = get_scans(domain=domain)
+    records = get_scans(email=email, domain=domain)
     return [
         ScanSummary(
             scan_id=r.scan_id,

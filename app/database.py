@@ -21,6 +21,7 @@ class ScanRecord(Base):
 
     scan_id = Column(String, primary_key=True)
     url = Column(String, nullable=False)
+    email = Column(String, nullable=True, index=True)
     seo_score = Column(Integer)
     status = Column(String, nullable=False)
     report = Column(JSON)
@@ -108,7 +109,7 @@ def _summarise_report(report: dict) -> dict:
     }
 
 
-def save_scan(scan_id: str, url: str, status: str, seo_score: int = None, report: dict = None):
+def save_scan(scan_id: str, url: str, status: str, seo_score: int = None, report: dict = None, email: str = None):
     summary = _summarise_report(report) if report else None
     with Session() as session:
         record = session.get(ScanRecord, scan_id)
@@ -116,10 +117,13 @@ def save_scan(scan_id: str, url: str, status: str, seo_score: int = None, report
             record.status = status
             record.seo_score = seo_score
             record.report = summary
+            if email:
+                record.email = email
         else:
             record = ScanRecord(
                 scan_id=scan_id,
                 url=url,
+                email=email,
                 status=status,
                 seo_score=seo_score,
                 report=summary,
@@ -143,9 +147,11 @@ def get_latest_scan(url: str, exclude_scan_id: str | None = None) -> ScanRecord 
         return q.first()
 
 
-def get_scans(domain: str = None, limit: int = 50) -> list[ScanRecord]:
+def get_scans(email: str = None, domain: str = None, limit: int = 50) -> list[ScanRecord]:
     with Session() as session:
         q = session.query(ScanRecord).order_by(ScanRecord.created_at.desc())
+        if email:
+            q = q.filter(ScanRecord.email == email)
         if domain:
             q = q.filter(ScanRecord.url.contains(domain))
         return q.limit(limit).all()

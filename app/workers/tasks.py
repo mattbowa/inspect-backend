@@ -24,7 +24,7 @@ def _set_result(scan_id: str, data: dict) -> None:
 
 
 @celery_app.task(bind=True, name="tasks.manual_run_scan")
-def manual_run_scan(self, scan_id: str, url: str, max_pages: int = 20, notify_email: str | None = None):
+def manual_run_scan(self, scan_id: str, url: str, max_pages: int = 20, notify_email: str | None = None, email: str | None = None):
     log.info("scan.started", scan_id=scan_id, url=url)
     _set_result(scan_id, {"status": "crawling"})
     self.update_state(state="CRAWLING")
@@ -59,7 +59,7 @@ def manual_run_scan(self, scan_id: str, url: str, max_pages: int = 20, notify_em
 
         report_dict = full_report.model_dump()
         _set_result(scan_id, {"status": "done", "report": report_dict})
-        save_scan(scan_id, url, "done", seo_score=full_report.seo_score, report=report_dict)
+        save_scan(scan_id, url, "done", seo_score=full_report.seo_score, report=report_dict, email=email)
         log.info("scan.done", scan_id=scan_id, score=full_report.seo_score)
 
         if notify_email:
@@ -77,7 +77,7 @@ def manual_run_scan(self, scan_id: str, url: str, max_pages: int = 20, notify_em
     except Exception as e:
         log.error("scan.failed", scan_id=scan_id, error=str(e))
         _set_result(scan_id, {"status": "failed", "error": str(e)})
-        save_scan(scan_id, url, "failed")
+        save_scan(scan_id, url, "failed", email=email)
         raise
 
 
@@ -106,7 +106,7 @@ def run_monitoring_scan(self, scan_id: str, url: str, notify_email: str | None =
             "pages_crawled": len(pages),
             "pages_discovered": 0,
         }
-        save_scan(scan_id, url, "done", seo_score=score, report=report_dict)
+        save_scan(scan_id, url, "done", seo_score=score, report=report_dict, email=notify_email)
         save_page_snapshots(scan_id, tech_report.issues)
         log.info("monitoring_scan.done", scan_id=scan_id, score=score)
 
@@ -127,7 +127,7 @@ def run_monitoring_scan(self, scan_id: str, url: str, notify_email: str | None =
 
     except Exception as e:
         log.error("monitoring_scan.failed", scan_id=scan_id, error=str(e))
-        save_scan(scan_id, url, "failed")
+        save_scan(scan_id, url, "failed", email=notify_email)
         raise
 
 
