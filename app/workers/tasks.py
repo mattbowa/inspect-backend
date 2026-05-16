@@ -100,7 +100,13 @@ def run_monitoring_scan(self, scan_id: str, url: str, notify_email: str | None =
         warnings = sum(1 for i in tech_report.issues if i.severity == "warning")
         score = max(0, 100 - (errors * 10) - (warnings * 3))
 
-        save_scan(scan_id, url, "done", seo_score=score)
+        report_dict = {
+            "top_actions": [],
+            "agents": [{"agent": "technical", "summary": tech_report.summary, "issues": [i.model_dump() for i in tech_report.issues]}],
+            "pages_crawled": len(pages),
+            "pages_discovered": 0,
+        }
+        save_scan(scan_id, url, "done", seo_score=score, report=report_dict)
         save_page_snapshots(scan_id, tech_report.issues)
         log.info("monitoring_scan.done", scan_id=scan_id, score=score)
 

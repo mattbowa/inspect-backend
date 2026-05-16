@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Query, HTTPException
 from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Any
 
 from app.database import get_scans, Session, Subscription, ACTIVE_STATUSES
 
@@ -14,6 +14,7 @@ class ScanSummary(BaseModel):
     seo_score: Optional[int]
     status: str
     created_at: datetime
+    report: Optional[Any] = None
 
 
 @router.get("", response_model=list[ScanSummary])
@@ -38,6 +39,7 @@ def list_history(
             seo_score=r.seo_score,
             status=r.status,
             created_at=r.created_at,
+            report=r.report,
         )
         for r in records
     ]

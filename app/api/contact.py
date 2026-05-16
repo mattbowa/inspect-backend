@@ -12,6 +12,7 @@ router = APIRouter()
 class ContactRequest(BaseModel):
     name: str
     email: EmailStr
+    reason: str = "General enquiry"
     message: str
 
 
@@ -27,9 +28,10 @@ def send_contact(body: ContactRequest):
             "from": settings.email_from,
             "to": "audits@inspectflux.com",
             "reply_to": body.email,
-            "subject": f"InspectFlux contact: {body.name}",
+            "subject": f"[{body.reason}] {body.name}",
             "html": f"""
             <p><strong>From:</strong> {body.name} &lt;{body.email}&gt;</p>
+            <p><strong>Reason:</strong> {body.reason}</p>
             <p><strong>Message:</strong></p>
             <p style="white-space:pre-wrap">{body.message}</p>
             """,
