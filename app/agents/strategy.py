@@ -34,25 +34,42 @@ def run(scan_id: str, url: str, agent_reports: list[AgentReport], pages_crawled:
 
 
 def _generate_top_actions(url: str, reports: list[AgentReport]) -> list[str]:
-    summaries = "\n".join(f"- {r.agent}: {r.summary}" for r in reports)
     issue_count = sum(len(r.issues) for r in reports)
 
-    prompt = f"""You are an SEO strategist. Based on these audit findings for {url}, identify the top 5 most impactful actions the site owner should take first.
+    if issue_count == 0:
+        return ["No issues found — your site passed all checks. Keep monitoring for regressions as you publish new content."]
 
-Prioritise actions in this order:
-1. Critical technical errors (missing H1, broken structure) — these block rankings
-2. High-traffic pages with missing or weak titles/meta descriptions — directly affects CTR
-3. Schema markup gaps — quick wins for rich snippets
-4. Content quality issues on key pages — E-E-A-T signals
-5. Internal linking opportunities — distributes authority across the site
+    issue_lines: list[str] = []
+    for r in reports:
+        for i in r.issues:
+            line = f"[{i.severity.upper()}] {r.agent} — {i.type} on {i.page_url}: {i.description}"
+            if i.suggestion:
+                line += f" Fix: {i.suggestion}"
+            issue_lines.append(line)
 
-Agent summaries:
-{summaries}
+    issues_text = "\n".join(issue_lines)
 
-Total issues found: {issue_count}
+    prompt = f"""You are an SEO strategist reviewing an audit of {url}.
 
-Return ONLY a JSON object with key "actions" containing an array of 5 strings.
-Each action must be specific to this site — no generic advice. Include the page URL or element affected where relevant. 1-2 sentences max per action."""
+Below are every issue found across all agents. Identify the top 5 most impactful actions the site owner should fix first.
+
+Prioritise by real-world ranking impact:
+1. Errors blocking indexation or crawling (robots.txt, noindex, broken links)
+2. Missing or duplicate title/H1 tags on crawled pages
+3. Missing meta descriptions affecting CTR
+4. Schema and structured data gaps
+5. Content and internal linking improvements
+
+ISSUES FOUND:
+{issues_text}
+
+Rules:
+- Base every action ONLY on the issues listed above — do not invent advice not supported by the data
+- Reference the specific page URL and element (e.g. "Add an H1 to https://example.com/about")
+- If fewer than 5 distinct actions are warranted by the issues, return fewer
+- 1–2 sentences max per action
+
+Return ONLY a JSON object with key "actions" containing an array of strings."""
 
     try:
         response = _client.messages.create(
