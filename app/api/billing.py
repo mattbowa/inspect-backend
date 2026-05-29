@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, EmailStr
 
 from app.config import settings
-from app.database import upsert_subscription, check_signup, Session, Subscription
+from app.database import upsert_subscription, delete_subscription, check_signup, Session, Subscription
 
 log = structlog.get_logger()
 router = APIRouter()
@@ -124,6 +124,8 @@ async def stripe_webhook(request: Request):
 
     if event["type"] in ("customer.subscription.created", "customer.subscription.updated"):
         sub = event["data"]["object"]
+        if sub["status"] == "canceled":
+            return {"ok": True}
         customer = stripe.Customer.retrieve(sub["customer"])
         email = customer.get("email", "")
         plan = sub["metadata"].get("plan") or sub["items"]["data"][0]["price"]["metadata"].get("plan", "business")
@@ -148,15 +150,7 @@ async def stripe_webhook(request: Request):
 
     elif event["type"] == "customer.subscription.deleted":
         sub = event["data"]["object"]
-        customer = stripe.Customer.retrieve(sub["customer"])
-        email = customer.get("email", "")
-        upsert_subscription(
-            email=email,
-            plan="",
-            status="cancelled",
-            stripe_customer_id=sub["customer"],
-            stripe_subscription_id=sub["id"],
-        )
-        log.info("subscription.cancelled", email=email)
+        delete_subscription(stripe_subscription_id=sub["id"])
+        log.info("subscription.deleted", subscription_id=sub["id"])
 
     return {"ok": True}

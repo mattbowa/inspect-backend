@@ -54,6 +54,14 @@ class Subscription(Base):
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
 
+def delete_subscription(stripe_subscription_id: str) -> None:
+    with Session() as session:
+        record = session.query(Subscription).filter_by(stripe_subscription_id=stripe_subscription_id).first()
+        if record:
+            session.delete(record)
+            session.commit()
+
+
 def upsert_subscription(email: str, plan: str, status: str, stripe_customer_id: str, stripe_subscription_id: str, website: str = None, cancellation_reason: dict = None):
     import uuid
     with Session() as session:
