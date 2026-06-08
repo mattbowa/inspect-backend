@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from app.workers.celery_app import celery_app
 from app.services.crawler import crawl_site
 from app.services.embeddings import embed_batch
-from app.services.email import send_scan_report
+from app.services.email import send_scan_report, send_admin_notification
 from app.agents import technical, content, linking, strategy
 from app.database import save_scan, get_active_subscriptions, get_latest_scan, save_page_snapshots, get_scan_diff
 from app.config import settings
@@ -61,6 +61,10 @@ def manual_run_scan(self, scan_id: str, url: str, max_pages: int = 20, notify_em
         _set_result(scan_id, {"status": "done", "report": report_dict})
         save_scan(scan_id, url, "done", seo_score=full_report.seo_score, report=report_dict, email=email)
         log.info("scan.done", scan_id=scan_id, score=full_report.seo_score)
+        send_admin_notification(
+            subject=f"Scan completed: {url}",
+            body=f"URL: {url}\nScore: {full_report.seo_score}/100\nEmail: {email or 'anonymous'}\nScan ID: {scan_id}",
+        )
 
         if notify_email:
             previous = get_latest_scan(url, exclude_scan_id=scan_id)

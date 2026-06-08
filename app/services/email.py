@@ -103,6 +103,24 @@ def _build_html(
     """
 
 
+ADMIN_EMAIL = "audits@inspectflux.com"
+
+
+def send_admin_notification(subject: str, body: str) -> None:
+    if not settings.resend_api_key:
+        return
+    resend.api_key = settings.resend_api_key
+    try:
+        resend.Emails.send({
+            "from": settings.email_from,
+            "to": ADMIN_EMAIL,
+            "subject": subject,
+            "html": f"<pre style='font-family:monospace;font-size:14px;'>{body}</pre>",
+        })
+    except Exception as e:
+        log.error("admin_email.failed", error=str(e))
+
+
 def send_scan_report(
     to: str,
     url: str,

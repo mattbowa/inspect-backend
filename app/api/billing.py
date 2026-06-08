@@ -5,6 +5,7 @@ from pydantic import BaseModel, EmailStr
 
 from app.config import settings
 from app.database import upsert_subscription, delete_subscription, check_signup, Session, Subscription
+from app.services.email import send_admin_notification
 
 log = structlog.get_logger()
 router = APIRouter()
@@ -147,10 +148,21 @@ async def stripe_webhook(request: Request):
             cancellation_reason=cancellation_reason,
         )
         log.info("subscription.updated", email=email, plan=plan, status=sub["status"])
+        if sub["status"] == "active":
+            send_admin_notification(
+                subject=f"New subscriber: {email}",
+                body=f"Email: {email}\nPlan: {plan}\nWebsite: {website}",
+            )
 
     elif event["type"] == "customer.subscription.deleted":
         sub = event["data"]["object"]
+        customer = stripe.Customer.retrieve(sub["customer"])
+        email = customer.get("email", "unknown")
         delete_subscription(stripe_subscription_id=sub["id"])
         log.info("subscription.deleted", subscription_id=sub["id"])
+        send_admin_notification(
+            subject=f"Subscription cancelled: {email}",
+            body=f"Email: {email}\nSubscription ID: {sub['id']}",
+        )
 
     return {"ok": True}
